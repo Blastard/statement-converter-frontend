@@ -56,7 +56,11 @@ export default function AuthForm({ onLogin }) {
 
       <div className="text-center mb-10 z-10 relative max-w-2xl">
         <div className="flex justify-center mb-6 drop-shadow-lg">
-          <Logo className="h-20 w-auto" />
+          {/* 👇 Added Link Wrapper 👇 */}
+          <a href="https://www.vayltech.com" className="hover:opacity-80 transition-opacity">
+            <Logo className="h-20 w-auto" />
+          </a>
+          {/* 👆 End Link Wrapper 👆 */}
         </div>
         <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
           Vsync
