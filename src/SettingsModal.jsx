@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
-import { X, CreditCard, Key, Trash2, Mail, Loader2, AlertTriangle } from 'lucide-react';
+import { X, CreditCard, Key, Trash2, Loader2 } from 'lucide-react';
 
-export default function SettingsModal({ session, onClose }) {
+// <--- CHANGE 1: Added onDeleteClick to props
+export default function SettingsModal({ session, onClose, onDeleteClick }) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -35,20 +36,7 @@ export default function SettingsModal({ session, onClose }) {
         setLoading(false);
     };
 
-    // 3. DELETE ACCOUNT
-    const handleDeleteAccount = async () => {
-        const confirm = window.prompt('Type "DELETE" to permanently delete your account and subscription.');
-        if (confirm !== 'DELETE') return;
-
-        setLoading('delete');
-        // Call Supabase to delete (This triggers the CASCADE delete in DB)
-        // Note: Ideally you call a backend route to cancel Stripe first, 
-        // but for MVP, manual cleanup or Stripe webhook "customer.deleted" handles it.
-        const { error } = await supabase.rpc('delete_user'); // We need to enable this RPC or use Admin API
-        // Fallback: Just sign out if RPC isn't set up, user must email support for hard delete in MVP
-        alert("Request received. For security, please email support@vayltech.com to finalize deletion and Stripe cancellation.");
-        setLoading(false);
-    };
+    // <--- CHANGE 2: Removed the old handleDeleteAccount function entirely.
 
     return (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -89,7 +77,8 @@ export default function SettingsModal({ session, onClose }) {
 
                     {/* DANGER ZONE */}
                     <div className="pt-4 border-t border-vayl-border">
-                        <button onClick={handleDeleteAccount} className="flex items-center text-red-400 hover:text-red-300 text-sm font-medium transition-colors">
+                        {/* <--- CHANGE 3: Button now calls onDeleteClick directly */}
+                        <button onClick={onDeleteClick} className="flex items-center text-red-400 hover:text-red-300 text-sm font-medium transition-colors w-full">
                             <Trash2 size={16} className="mr-2" /> Delete Account
                         </button>
                     </div>
