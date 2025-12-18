@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
 import { X, CreditCard, Key, Trash2, Loader2 } from 'lucide-react';
 
-// <--- CHANGE 1: Added onDeleteClick to props
 export default function SettingsModal({ session, onClose, onDeleteClick }) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -35,8 +34,6 @@ export default function SettingsModal({ session, onClose, onDeleteClick }) {
         else setMessage('Password reset link sent to your email.');
         setLoading(false);
     };
-
-    // <--- CHANGE 2: Removed the old handleDeleteAccount function entirely.
 
     return (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -77,8 +74,8 @@ export default function SettingsModal({ session, onClose, onDeleteClick }) {
 
                     {/* DANGER ZONE */}
                     <div className="pt-4 border-t border-vayl-border">
-                        {/* <--- CHANGE 3: Button now calls onDeleteClick directly */}
-                        <button onClick={onDeleteClick} className="flex items-center text-red-400 hover:text-red-300 text-sm font-medium transition-colors w-full">
+                        {/* THIS IS THE CRITICAL LINE: It calls the prop from App.jsx */}
+                        <button onClick={onDeleteClick} className="flex items-center text-red-400 hover:text-red-300 text-sm font-medium transition-colors w-full justify-start">
                             <Trash2 size={16} className="mr-2" /> Delete Account
                         </button>
                     </div>
