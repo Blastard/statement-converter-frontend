@@ -110,7 +110,21 @@ export default function App() {
     formData.append('userId', session.user.id);
 
     try {
-      const response = await fetch(API_URL, { method: 'POST', body: formData });
+      // 1. GET THE TOKEN (Critical Fix)
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const token = currentSession?.access_token;
+
+      if (!token) throw new Error("You must be logged in to convert files.");
+
+      // 2. SEND TOKEN IN HEADERS
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          // Note: Do NOT set Content-Type here; fetch sets it automatically for FormData
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
       const fraudWarning = response.headers.get('x-fraud-warning');
       if (fraudWarning) {
