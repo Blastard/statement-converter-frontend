@@ -263,14 +263,15 @@ export default function App() {
   );
 }
 
-// --- SUBSCRIPTION TIERS ---
+// --- UPDATED SUBSCRIPTION TIERS (Now using 1SZ IDs) ---
 const PLANS = [
-  { id: 'basic', name: 'Basic', price: '$7', period: '/mo', priceId: 'price_1SX5yF5XXtc792l625r3suMc', features: ['20 Page Limit', 'Formats: CSV, QBO'], color: 'bg-vayl-card border-vayl-border' },
-  { id: 'pro', name: 'Pro', price: '$9', period: '/mo', priceId: 'price_1SX60r5XXtc792l6LWXSzfyt', features: ['Unlimited Pages', 'All Formats (IIF, Excel)', 'Receipts & Invoices'], color: 'bg-vayl-card border-vayl-primary shadow-xl shadow-teal-900/20', popular: true },
-  { id: 'pro3', name: 'Pro 3', price: '$19', period: '/qtr', priceId: 'price_1SX62W5XXtc792l6xAGss9r6', features: ['Same as Pro', 'Save ~30%'], color: 'bg-vayl-card border-vayl-border' },
-  { id: 'pro12', name: 'Pro 12', price: '$57', period: '/yr', priceId: 'price_1SX65J5XXtc792l6WxKOlHOp', features: ['Same as Pro', 'Best Value'], color: 'bg-vayl-card border-vayl-border' },
-  { id: 'team3', name: 'Team 3', price: '$29', period: '/qtr', priceId: 'price_1SYBSZ5XXtc792l6k80TTAPp', features: ['6 Simultaneous Logins', 'Team Dashboard'], color: 'bg-[#020617] border-blue-900/40' },
-  { id: 'team12', name: 'Team 12', price: '$67', period: '/yr', priceId: 'price_1SYBTk5XXtc792l6axcP1rXh', features: ['20 Simultaneous Logins', 'Enterprise Priority'], color: 'bg-[#020617] border-blue-900/40' },
+  { id: 'basic', name: 'Basic', price: '$7', period: '/mo', priceId: 'price_1SZak68U9eHdTo92No2DLjEy', features: ['20 Page Limit', 'Formats: CSV, QBO'], color: 'bg-vayl-card border-vayl-border' },
+  { id: 'pro', name: 'Pro', price: '$9', period: '/mo', priceId: 'price_1SZamg8U9eHdTo92F11VZxSI', features: ['Unlimited Pages', 'All Formats (IIF, Excel)', 'Receipts & Invoices'], color: 'bg-vayl-card border-vayl-primary shadow-xl shadow-teal-900/20', popular: true },
+  { id: 'pro3', name: 'Pro 3', price: '$19', period: '/qtr', priceId: 'price_1SZaoV8U9eHdTo92Fwvr3G4a', features: ['Same as Pro', 'Save ~30%'], color: 'bg-vayl-card border-vayl-border' },
+  // FIXED: Using correct unique ID for Pro 12 (different from Team 12)
+  { id: 'pro12', name: 'Pro 12', price: '$57', period: '/yr', priceId: 'price_1SZasA8U9eHdTo92NC0jEzMg', features: ['Same as Pro', 'Best Value'], color: 'bg-vayl-card border-vayl-border' },
+  { id: 'team3', name: 'Team 3', price: '$29', period: '/qtr', priceId: 'price_1SZar08U9eHdTo92VlM8vt6h', features: ['6 Simultaneous Logins', 'Team Dashboard'], color: 'bg-[#020617] border-blue-900/40' },
+  { id: 'team12', name: 'Team 12', price: '$67', period: '/yr', priceId: 'price_1SZatZ8U9eHdTo92SRdrjD4c', features: ['20 Simultaneous Logins', 'Enterprise Priority'], color: 'bg-[#020617] border-blue-900/40' },
 ];
 
 function PricingComponent({ userId, onClose }) {
@@ -293,7 +294,7 @@ function PricingComponent({ userId, onClose }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // <--- CRITICAL FIX
+          'Authorization': `Bearer ${session.access_token}`
         },
         // Only sending priceId and email. Backend derives Tier and UserID securely.
         body: JSON.stringify({

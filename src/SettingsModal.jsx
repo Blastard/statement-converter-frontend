@@ -7,7 +7,7 @@ export default function SettingsModal({ session, onClose, onDeleteClick }) {
     const [message, setMessage] = useState('');
 
     // Use the environment variable, fallback to hardcoded if testing locally without env
-    const API_URL = import.meta.env.VITE_API_URL || 'https://statement-converter-backend.vercel.app';
+    const API_URL = import.meta.env.VITE_API_URL || 'https://statement-converter-backend.onrender.com';
 
     // 1. MANAGE SUBSCRIPTION (Stripe Portal)
     const handleManageBilling = async () => {
