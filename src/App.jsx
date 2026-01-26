@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import AuthForm from './AuthForm';
 import Logo from './components/VsyncLogo';
 import SettingsModal from './SettingsModal';
-import DeleteAccountModal from './components/DeleteAccountModal'; // <--- NEW: Import the new modal
+import DeleteAccountModal from './components/DeleteAccountModal';
 import { Upload, FileText, AlertCircle, Loader2, ChevronDown, LogOut, User, Sparkles, Zap, Check, X, Settings } from 'lucide-react';
 
 // Vayltech Logo Component for Ribbons
@@ -14,23 +14,21 @@ const VayltechLogo = () => (
   </div>
 );
 
+// Helper to get API URL
+const getApiUrl = () => import.meta.env.VITE_API_URL || 'https://vsync-converter-backend.onrender.com';
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [showPricing, setShowPricing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // <--- NEW: State for delete modal
-  const [isDeleting, setIsDeleting] = useState(false); // <--- NEW: Loading state for deletion process
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [file, setFile] = useState(null);
   const [format, setFormat] = useState('CSV');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [subscription, setSubscription] = useState('free');
   const [reconStatus, setReconStatus] = useState(null);
-
-  // Backend API URLs
-  const API_URL = 'https://vsync-converter-backend.onrender.com/convert';
-  // <--- NEW: Add the delete endpoint URL
-  const DELETE_API_URL = 'https://vsync-converter-backend.onrender.com/api/user/delete-account';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -54,22 +52,20 @@ export default function App() {
     localStorage.clear(); setSession(null);
   };
 
-  // <--- NEW: Handler for confirming account deletion
   const handleConfirmDelete = async () => {
     if (!session) return;
     setIsDeleting(true);
 
     try {
-      // Get the current session token for authentication
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const token = currentSession?.access_token;
 
       if (!token) throw new Error("No authentication token found.");
 
-      const response = await fetch(DELETE_API_URL, {
+      const response = await fetch(`${getApiUrl()}/api/user/delete-account`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`, // Send token in header
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -79,7 +75,6 @@ export default function App() {
         throw new Error(errorData.error || 'Account deletion failed.');
       }
 
-      // Success! Log out the user.
       await handleLogout();
       alert("Your account has been permanently deleted.");
 
@@ -87,7 +82,7 @@ export default function App() {
       console.error("Deletion Error:", err);
       alert(`Error: ${err.message}`);
       setIsDeleting(false);
-      setShowDeleteModal(false); // Close modal on error
+      setShowDeleteModal(false);
     }
   };
 
@@ -107,21 +102,18 @@ export default function App() {
     const formData = new FormData();
     formData.append('statement', file);
     formData.append('format', format);
-    formData.append('userId', session.user.id);
+    // userId is no longer needed in body, backend gets it from token
 
     try {
-      // 1. GET THE TOKEN (Critical Fix)
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const token = currentSession?.access_token;
 
       if (!token) throw new Error("You must be logged in to convert files.");
 
-      // 2. SEND TOKEN IN HEADERS
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${getApiUrl()}/convert`, {
         method: 'POST',
         body: formData,
         headers: {
-          // Note: Do NOT set Content-Type here; fetch sets it automatically for FormData
           'Authorization': `Bearer ${token}`
         }
       });
@@ -246,7 +238,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* <--- NEW: Pass the onDelete handler to the SettingsModal */}
         {showPricing && <PricingComponent userId={session.user.id} onClose={() => setShowPricing(false)} />}
         {showSettings && <SettingsModal session={session} onClose={() => setShowSettings(false)} onDeleteClick={() => { setShowSettings(false); setShowDeleteModal(true); }} />}
 
@@ -261,7 +252,6 @@ export default function App() {
         <VayltechLogo />
       </div>
 
-      {/* <--- NEW: Render the DeleteAccountModal here */}
       <DeleteAccountModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -273,7 +263,7 @@ export default function App() {
   );
 }
 
-// --- SUBSCRIPTION TIERS (Kept the same) ---
+// --- SUBSCRIPTION TIERS ---
 const PLANS = [
   { id: 'basic', name: 'Basic', price: '$7', period: '/mo', priceId: 'price_1SX5yF5XXtc792l625r3suMc', features: ['20 Page Limit', 'Formats: CSV, QBO'], color: 'bg-vayl-card border-vayl-border' },
   { id: 'pro', name: 'Pro', price: '$9', period: '/mo', priceId: 'price_1SX60r5XXtc792l6LWXSzfyt', features: ['Unlimited Pages', 'All Formats (IIF, Excel)', 'Receipts & Invoices'], color: 'bg-vayl-card border-vayl-primary shadow-xl shadow-teal-900/20', popular: true },
@@ -285,19 +275,45 @@ const PLANS = [
 
 function PricingComponent({ userId, onClose }) {
   const [loading, setLoading] = useState(null);
-  const API_URL = 'https://vsync-converter-backend.onrender.com/create-checkout-session';
 
-  const handleSubscribe = async (priceId, tierId) => {
+  const handleSubscribe = async (priceId) => {
     setLoading(priceId);
     try {
-      const response = await fetch(API_URL, {
+      // 1. GET SESSION TOKEN
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        alert("Please log in to upgrade.");
+        setLoading(null);
+        return;
+      }
+
+      // 2. SEND REQUEST WITH TOKEN
+      const response = await fetch(`${getApiUrl()}/create-checkout-session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, priceId, tier: tierId }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // <--- CRITICAL FIX
+        },
+        // Only sending priceId and email. Backend derives Tier and UserID securely.
+        body: JSON.stringify({
+          priceId,
+          email: session.user.email
+        }),
       });
+
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-    } catch (error) { console.error(error); alert("Network error."); } finally { setLoading(null); }
+      else {
+        console.error("Checkout Error:", data.error);
+        alert("Error: " + (data.error || "Failed to start checkout"));
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Network error.");
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -318,7 +334,7 @@ function PricingComponent({ userId, onClose }) {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSubscribe(plan.priceId, plan.id)} disabled={loading} className="w-full py-3 rounded-lg bg-vayl-card hover:bg-vayl-primary hover:text-white text-vayl-muted font-bold text-sm transition-all border border-vayl-border hover:border-transparent">
+              <button onClick={() => handleSubscribe(plan.priceId)} disabled={loading} className="w-full py-3 rounded-lg bg-vayl-card hover:bg-vayl-primary hover:text-white text-vayl-muted font-bold text-sm transition-all border border-vayl-border hover:border-transparent">
                 {loading === plan.priceId ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Select'}
               </button>
             </div>
