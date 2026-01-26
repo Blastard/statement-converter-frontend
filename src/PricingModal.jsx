@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Loader2, X, Sparkles } from 'lucide-react';
 import Logo from './components/Logo';
+import { supabase } from '../supabaseClient'; // <--- NEW IMPORT REQUIRED
 
 // *** PASTE STRIPE IDs HERE ***
 const PLANS = [
@@ -53,21 +54,44 @@ const PLANS = [
 
 export default function Pricing({ userId, onClose }) {
     const [loading, setLoading] = useState(null);
-    const API_URL = 'https://statement-converter-backend.vercel.app/create-checkout-session';
+    // Use the environment variable, fallback to hardcoded if testing locally without env
+    const API_URL = import.meta.env.VITE_API_URL || 'https://statement-converter-backend.vercel.app';
 
     const handleSubscribe = async (priceId) => {
         setLoading(priceId);
         try {
-            const response = await fetch(API_URL, {
+            // 1. GET SESSION TOKEN
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session) {
+                alert("Please log in to upgrade.");
+                setLoading(null);
+                return;
+            }
+
+            // 2. SEND REQUEST WITH TOKEN
+            const response = await fetch(`${API_URL}/create-checkout-session`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, priceId }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}` // <--- CRITICAL FIX
+                },
+                // No need to send userId anymore, backend gets it from token
+                body: JSON.stringify({ priceId }),
             });
+
             const data = await response.json();
-            if (data.url) window.location.href = data.url;
+
+            if (response.ok && data.url) {
+                window.location.href = data.url;
+            } else {
+                console.error('Checkout Error:', data.error);
+                alert("Subscription failed: " + (data.error || "Unknown error"));
+            }
+
         } catch (error) {
             console.error(error);
-            alert("Network error.");
+            alert("Network error. Please try again.");
         } finally {
             setLoading(null);
         }
@@ -75,7 +99,7 @@ export default function Pricing({ userId, onClose }) {
 
     return (
         <div className="fixed inset-0 bg-vayl-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto font-sans">
-            <div className="bg-vayl-black rounded-3xl w-full max-w-6xl p-8 relative my-8 border border-vayl-darker shadow-2xl relative overflow-hidden">
+            <div className="bg-vayl-black rounded-3xl w-full max-w-6xl p-8 relative my-8 border border-vayl-darker shadow-2xl overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-vayl-purple opacity-[0.1] blur-[120px] rounded-full pointer-events-none"></div>
 
                 <button onClick={onClose} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors z-20 bg-vayl-darker p-2 rounded-full">
