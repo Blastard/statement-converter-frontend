@@ -6,19 +6,44 @@ export default function SettingsModal({ session, onClose, onDeleteClick }) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
 
+    // Use the environment variable, fallback to hardcoded if testing locally without env
+    const API_URL = import.meta.env.VITE_API_URL || 'https://statement-converter-backend.vercel.app';
+
     // 1. MANAGE SUBSCRIPTION (Stripe Portal)
     const handleManageBilling = async () => {
         setLoading('billing');
         try {
-            const response = await fetch('https://vsync-converter-backend.onrender.com/create-portal-session', {
+            // 1. Get the current session (The Key)
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+            if (!currentSession) {
+                alert("Please log in first.");
+                return;
+            }
+
+            // 2. Send the request WITH the token
+            const response = await fetch(`${API_URL}/create-portal-session`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: session.user.id, email: session.user.email }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    // ✅ CRITICAL: This header was missing. It is the "Key".
+                    'Authorization': `Bearer ${currentSession.access_token}`
+                },
+                // Body can be empty now, backend gets ID from token
+                body: JSON.stringify({}),
             });
+
             const data = await response.json();
-            if (data.url) window.location.href = data.url;
+
+            if (response.ok && data.url) {
+                window.location.href = data.url;
+            } else {
+                console.error("Portal Error:", data.error);
+                alert("Error connecting to billing: " + (data.error || "Unknown error"));
+            }
         } catch (error) {
-            alert("Error connecting to billing.");
+            console.error('Portal access failed:', error);
+            alert("Network error connecting to billing.");
         } finally {
             setLoading(false);
         }
